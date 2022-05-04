@@ -1,0 +1,2 @@
+int64 pwr_left
+int64 pwr_right

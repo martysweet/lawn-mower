@@ -1,0 +1,2 @@
+int64 cnt_left
+int64 cnt_right
