@@ -6,4 +6,11 @@
 
 # ROS2
 
+# RPI
+
+Useful commands
+```bash
+docker run ghcr.io/martysweet/lawn-mower:main ros2 topic pub /chatter std_msgs/String "data: Hello world"
+```
+
 # Fusion360
