@@ -18,6 +18,6 @@ if [ $1 = "install" ]; then
 fi
 
 # Pulls the latest docker-compose
-wget https://raw.githubusercontent.com/martysweet/lawn-mower/main/ros2/dev_ws/docker/docker-compose.yml -o docker-compose.yml
+wget https://raw.githubusercontent.com/martysweet/lawn-mower/main/ros2/dev_ws/docker/docker-compose.yml -O docker-compose.yml
 docker-compose pull
 docker-compose up -d
