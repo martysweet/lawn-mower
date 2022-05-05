@@ -23,4 +23,5 @@ docker buildx build --platform=linux/arm64,linux/amd64 -t ros2 .
 
 docker run --privileged  ghcr.io/martysweet/lawn-mower:dev ros2 run drive_i2c drive_control
 
+docker run ghcr.io/martysweet/lawn-mower:dev -- ros2 topic pub /i2c_drive_cmd robomower_interfaces/I2CDrive "{pwr_left: 0, pwr_right: 0}" --once
 ```
