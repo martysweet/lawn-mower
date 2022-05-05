@@ -1,1 +1,2 @@
 adafruit-blinka
+python3-rpi.gpio

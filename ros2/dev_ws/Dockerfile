@@ -1,4 +1,5 @@
 FROM arm64v8/ros:foxy-ros-base
+# FROM osrf/ros:foxy-desktop
 
 # Install deps
 RUN apt update && apt install python3-pip -y
