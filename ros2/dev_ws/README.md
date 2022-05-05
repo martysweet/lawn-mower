@@ -20,4 +20,7 @@ ros2 run py_pubsub talker
 $ sudo apt-get install qemu qemu-user qemu-user-static
 
 docker buildx build --platform=linux/arm64,linux/amd64 -t ros2 .
+
+docker run --privileged  ghcr.io/martysweet/lawn-mower:dev ros2 run drive_i2c drive_control
+
 ```

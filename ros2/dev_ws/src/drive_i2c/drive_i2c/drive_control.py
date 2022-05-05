@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import busio
+from board import *
 
 from robomower_interfaces.msg import I2CDrive # pwr_left, pwr_right
 
@@ -9,7 +10,7 @@ from robomower_interfaces.msg import I2CDrive # pwr_left, pwr_right
 #
 
 # For RPI 3
-i2c = busio.I2C(3, 2)
+i2c = busio.I2C(SCL, SDA)
 TARGET_ADDR = 0x9
 INBOUND_TOPIC = 'i2c_drive_cmd'
 
