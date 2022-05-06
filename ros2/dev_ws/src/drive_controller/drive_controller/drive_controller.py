@@ -41,7 +41,15 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
     valueScaled = float(value - leftMin) / float(leftSpan)
 
     # Convert the 0-1 range into a value in the right range.
-    return rightMin + (valueScaled * rightSpan)
+    val = rightMin + (valueScaled * rightSpan)
+
+    if val < rightMin:
+        return rightMin
+    elif val > rightMax:
+        return rightMax
+    else:
+        return val
+
 
 class DriveController(Node):
     def __init__(self):
@@ -86,6 +94,9 @@ class DriveController(Node):
 
     def update_odometry(self, msg):
         self.get_logger().info('{}'.format(msg))
+
+        # TODO: Do we need to discard if we don't have current drive?
+        # TODO: This could happen if the hall is sitting on the edge - or should this be handled in the ardiuno code?
 
         self.right_travel += msg.cnt_right * ODOMETRY_TRAVEL # TODO * current wheel direction
 
