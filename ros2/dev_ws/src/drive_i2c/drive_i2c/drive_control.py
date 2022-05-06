@@ -14,6 +14,8 @@ i2c = busio.I2C(SCL, SDA)
 TARGET_ADDR = 0x9
 INBOUND_TOPIC = 'i2c_drive_cmd'
 
+def set_bit(value, bit):
+    return value | (1<<bit)
 
 class DriveSubscriber(Node):
     def __init__(self):
@@ -23,18 +25,32 @@ class DriveSubscriber(Node):
             INBOUND_TOPIC,
             self.listener_callback,
             10)
+        self.get_logger().info("Ready")
 
     def listener_callback(self, msg):
         self.get_logger().info('I heard: {} {}'.format(msg.pwr_left, msg.pwr_right))
         direction = 0
-        self.update_bit(direction, 0, 1 if msg.pwr_left < 0 else 0)
-        self.update_bit(direction, 1, 1 if msg.pwr_right < 0 else 0)
-        while not i2c.try_lock():
+
+        if msg.pwr_left < 0:
+            direction = set_bit(direction, 0)
+
+        if msg.pwr_right < 0:
+            direction = set_bit(direction, 1)
+
+        # Obtain the lock
+        try:
+            while not i2c.try_lock():
+                pass
+
+            # Write the data
+            self.get_logger().info("Writing: {} {} {}".format(hex(direction), hex(abs(msg.pwr_left)), hex(abs(msg.pwr_right))))
             i2c.writeto(TARGET_ADDR, bytes([direction, abs(msg.pwr_left), abs(msg.pwr_right)]), stop=False)
 
-    def update_bit(self, num, bit, i):
-        mask = ~(1 << i)
-        return (num & mask) | (bit << i)
+            # Release the lock
+            i2c.unlock()
+        except Exception as e:
+            print(e)
+
 
 
 def main(args=None):

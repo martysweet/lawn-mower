@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'drive_control = drive_i2c.drive_control:main',
+            'odometry_feedback = drive_i2c.odometry_feedback:main',
         ],
     },
 )

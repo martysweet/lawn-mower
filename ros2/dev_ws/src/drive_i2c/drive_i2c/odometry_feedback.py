@@ -1,11 +1,12 @@
 import rclpy
 from rclpy.node import Node
 import busio
+from board import *
 
-from robomower.msg import I2COdometry
+from robomower_interfaces.msg import I2COdometry
 
 
-i2c = busio.I2C(3, 2)
+i2c = busio.I2C(SCL, SDA)
 TARGET_ADDR = 0x9
 OUTBOUND_TOPIC = 'i2c_odometry'
 
@@ -16,18 +17,23 @@ class OdometryPublisher(Node):
         self.publisher_ = self.create_publisher(I2COdometry, OUTBOUND_TOPIC, 20)
         timer_period = 0.1
         self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.get_logger().info("Ready")
 
     def timer_callback(self):
         # Read from I2C
         result = bytearray(2)
         while not i2c.try_lock():
-            i2c.readfrom_into(TARGET_ADDR, result)
+            pass
+
+        i2c.readfrom_into(TARGET_ADDR, result)
+
+        i2c.unlock()
 
         msg = I2COdometry()
         msg.cnt_left = int.from_bytes([result[0]], "big")       # TODO Check Endian
         msg.cnt_right = int.from_bytes([result[1]], "big")
         self.publisher_.publish(msg)
-        self.get_logger().info('Publishing message')
+        self.get_logger().info('Publishing message: {}'.format(msg))
 
 
 def main(args=None):
