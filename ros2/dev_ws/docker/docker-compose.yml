@@ -1,5 +1,42 @@
 version: "2.3"
 services:
+
+# DDS uses /dev/shm to send messages between nodes on the same network (network_mode: host)
+# network_mode: host is useful as it allows debugging on your development machine
+# pid: host prevents DDS namespace clashes
+
   drive_i2c:
-    image: ghcr.io/martysweet/lawn-mower:main
+    image: ghcr.io/martysweet/lawn-mower:dev
     command: ros2 run drive_i2c drive_control
+    network_mode: host
+    pid: host
+    privileged: true
+    volumes:
+      - /dev/shm:/dev/shm
+
+  drive_odometry:
+    image: ghcr.io/martysweet/lawn-mower:dev
+    command: ros2 run drive_i2c odometry_feedback
+    network_mode: host
+    pid: host
+    privileged: true
+    volumes:
+      - /dev/shm:/dev/shm
+
+  joy_linux:
+    image: ghcr.io/martysweet/lawn-mower:dev
+    command: ros2 run joy_linux joy_linux_node
+    network_mode: host
+    pid: host
+    privileged: true
+    volumes:
+      - /dev/shm:/dev/shm
+
+  teleop_twist:
+    image: ghcr.io/martysweet/lawn-mower:dev
+    command: ros2 run teleop_twist_joy teleop_node --ros-args -p require_enable_button:="false" -p axis_linear.x:="1" -p axis_angular.yaw:="0" -p scale_linear.x:="3.0" -p scale_angular.yaw:="3.0"
+    network_mode: host
+    pid: host
+    privileged: true
+    volumes:
+      - /dev/shm:/dev/shm

@@ -2,7 +2,7 @@ FROM arm64v8/ros:foxy-ros-base
 # FROM osrf/ros:foxy-desktop
 
 # Install deps
-RUN apt update && apt install python3-pip python3-rpi.gpio -y
+RUN apt update && apt install python3-pip python3-rpi.gpio ros-foxy-joy-linux ros-foxy-teleop-twist-joy ros-foxy-demo-nodes-py -y
 RUN rosdep update # Get package names
 
 # Copy Source

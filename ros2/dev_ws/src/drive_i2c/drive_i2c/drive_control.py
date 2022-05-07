@@ -19,7 +19,7 @@ def set_bit(value, bit):
 
 class DriveSubscriber(Node):
     def __init__(self):
-        super().__init__('drive_subscriber')
+        super().__init__('i2c_drive_subscriber')
         self.subscription = self.create_subscription(
             I2CDrive,
             INBOUND_TOPIC,

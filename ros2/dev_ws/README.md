@@ -1,6 +1,4 @@
 
-
-
 ## Useful Commands
 ```
 Within src/
@@ -33,11 +31,13 @@ docker run ghcr.io/martysweet/lawn-mower:dev -- ros2 topic pub /i2c_drive_cmd ro
 `-it` Interactive, allows CTRL+C to be captured
 
 ```bash
+# Drive Control
 export IMAGE=ghcr.io/martysweet/lawn-mower:dev
 docker pull $IMAGE && docker run -it --privileged --network host $IMAGE ros2 run drive_i2c drive_control
 ```
 
 ```bash
+# Odometry
 export IMAGE=ghcr.io/martysweet/lawn-mower:dev
 docker pull $IMAGE && docker run -it --privileged --network host $IMAGE ros2 run drive_i2c odometry_feedback
 ```
@@ -57,4 +57,36 @@ ros2 topic pub /i2c_drive_cmd robomower_interfaces/I2CDrive "{pwr_left: 0, pwr_r
 
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+# DS4 Controller
+
+On the RPI:
+```bash
+sudo bluetoothctl
+# Hold PS + Share until blinking
+devices
+pair <MacADDR>
+# Authorise yes
+```
+
+```bash
+# RPI (Bluetooth to controller messages)
+export IMAGE=ghcr.io/martysweet/lawn-mower:dev
+docker pull $IMAGE && docker run -it --privileged --network host $IMAGE -- ros2 run joy_linux joy_linux_node
+ 
+
+# Local
+ros2 topic echo /joy
+
+# RPI (translates controller commands to Twist)
+export IMAGE=ghcr.io/martysweet/lawn-mower:dev
+docker pull $IMAGE && docker run -it --privileged --network host $IMAGE -- ros2 run teleop_twist_joy teleop_node --ros-args -p require_enable_button:="false" -p axis_linear.x:="1" -p axis_angular.yaw:="0" -p scale_linear.x:="3.0" -p scale_angular.yaw:="3.0"
+
+export IMAGE=ghcr.io/martysweet/lawn-mower:dev
+docker pull $IMAGE && docker run -it --privileged --network host $IMAGE -- ros2 run demo_nodes_cpp listener
+
+
+export IMAGE=ghcr.io/martysweet/lawn-mower:dev
+docker pull $IMAGE && docker run -it --privileged --network host $IMAGE -- ros2 run demo_nodes_cpp talker
 ```

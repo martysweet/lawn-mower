@@ -19,5 +19,6 @@ fi
 
 # Pulls the latest docker-compose
 curl https://raw.githubusercontent.com/martysweet/lawn-mower/main/ros2/dev_ws/docker/docker-compose.yml --output docker-compose.yml
+docker-compose down
 docker-compose pull
 docker-compose up -d

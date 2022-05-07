@@ -30,8 +30,13 @@ class OdometryPublisher(Node):
         i2c.unlock()
 
         msg = I2COdometry()
-        msg.cnt_left = int.from_bytes([result[0]], "big")       # TODO Check Endian
+        msg.cnt_left = int.from_bytes([result[0]], "big")
         msg.cnt_right = int.from_bytes([result[1]], "big")
+
+        # Don't send message if there isn't any change
+        if msg.cnt_left == 0 and msg.cnt_right == 0:
+            return
+
         self.publisher_.publish(msg)
         self.get_logger().info('Publishing message: {}'.format(msg))
 

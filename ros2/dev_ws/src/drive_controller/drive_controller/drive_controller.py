@@ -53,7 +53,7 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 
 class DriveController(Node):
     def __init__(self):
-        super().__init__('drive_subscriber')
+        super().__init__('drive_controller')
         self.twist_subscription = self.create_subscription(
             Twist,
             "cmd_vel",
