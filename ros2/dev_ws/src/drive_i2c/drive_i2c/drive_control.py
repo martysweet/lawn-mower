@@ -45,11 +45,11 @@ class DriveSubscriber(Node):
             # Write the data
             self.get_logger().info("Writing: {} {} {}".format(hex(direction), hex(abs(msg.pwr_left)), hex(abs(msg.pwr_right))))
             i2c.writeto(TARGET_ADDR, bytes([direction, abs(msg.pwr_left), abs(msg.pwr_right)]), stop=False)
-
+        except Exception as e:
+            self.get_logger().error("{}".format(e))
+        finally:
             # Release the lock
             i2c.unlock()
-        except Exception as e:
-            print(e)
 
 
 

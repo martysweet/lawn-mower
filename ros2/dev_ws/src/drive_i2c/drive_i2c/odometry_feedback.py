@@ -22,12 +22,17 @@ class OdometryPublisher(Node):
     def timer_callback(self):
         # Read from I2C
         result = bytearray(2)
-        while not i2c.try_lock():
-            pass
 
-        i2c.readfrom_into(TARGET_ADDR, result)
+        try:
+            while not i2c.try_lock():
+                pass
 
-        i2c.unlock()
+            i2c.readfrom_into(TARGET_ADDR, result)
+        except Exception as e:
+            self.get_logger().error("{}".format(e))
+        finally:
+            # Release the lock
+            i2c.unlock()
 
         msg = I2COdometry()
         msg.cnt_left = int.from_bytes([result[0]], "big")

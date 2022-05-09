@@ -6,4 +6,4 @@ RPI_IP=robomower
 
 
 # Setup pub key auth
-ssh $RPI_USER@$RPI_IP "watch -n1 docker ps"
+ssh $RPI_USER@$RPI_IP -t "watch -n1 docker ps"
