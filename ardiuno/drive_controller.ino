@@ -16,21 +16,21 @@
 #define ENCA 3
 #define ENCB 4
 
+// The number of encoder counts which equal a single revolution
 #define COUNTS_PER_REV 1440
 
+// Velocity and RPM Tracking
 double leftTargetRPM, rightTargetRPM = 0;    // Input to the PID Controllers
 double leftCurrentRPM, rightCurrentRPM = 0;  // Error to the PID Controllers
 double leftPWM, rightPWM = 0;                // Output from the PID Controllers
 volatile double leftCount, rightCount = 0;   // Hall Counter for RPM computation
 double leftCountPrev, rightCountPrev = 0;    // Hall Counter for RPM computation
+double previousVelTime = 0;                  // Main Loop Velocity Time for Deltas
+int lastUpdateTime = 0;                      // Safety watchdog from I2C write
 
 // PID
 PID leftPID(&leftCurrentRPM, &leftPWM, &leftTargetRPM, 2, 5, 1, P_ON_M, DIRECT);
 PID rightPID(&rightCurrentRPM, &rightPWM, &rightTargetRPM, 2, 5, 1, P_ON_M, DIRECT);
-double previousVelTime = 0;
-
-// TODO: Times
-int lastUpdateTime = 0;   // Safety watchdog
 
 // I2C Specification
 // Operations
@@ -38,10 +38,10 @@ int lastUpdateTime = 0;   // Safety watchdog
 // - Write Motor Direction/Speed in RPM (onReceive)
 //    - Perform a 3-byte write to the device
 //    - Byte 1, LSB LEFT direction, LSB+1 RIGHT direction, where 0=forward,1=reverse
-//    - Byte 2, Byte 3, LEFT and RIGHT speed 0-255
+//    - Byte 2, Byte 3, LEFT and RIGHT speed 0-255 RPM
 //
 // - Read odometry count (onRequest)
-//    - Returns 1-byte for each counter (2-byte response)
+//    - Returns 1-byte for each counter (2-byte response) TODO Define fully
 //    - [Left, Right]
 
 // Function declartion to allow calls before function definitions
