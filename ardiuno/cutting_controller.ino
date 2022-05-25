@@ -1,21 +1,32 @@
+#include <PID_v1.h> // https://github.com/br3ttb/Arduino-PID-Library
 #include <Wire.h>
-#include "TLE9879_Group.h"
-TLE9879_Group *shields;
 
 #define MAX_MOTOR_RPM 3500
-#define COUNTS_PER_REV 6
+#define COUNTS_PER_REV 1
 #define ENC_A_PIN 3
+#define PWM_PIN 5
 
-bool doUpdate = false;
-int desiredPercSpeed = 0;   // 0-100 of desired speed, maps to 0-MAX_MOTOR_RPM
+#define PID_PWM_MIN 0
+#define PID_PWM_MAX 128
+#define TUNING_MODE true    // Allows Serial inputs to adjust RPM for monitoring graph output, ignores watchdog timer
+
 int lastUpdateTime = 0;     // Safety watchdog from I2C write
 
 volatile double motorCount = 0;
 double prevMotorCount = 0;
 double prevVelTime = 0;
 
-int currentRPM = 0;
+double targetRPM = 0;
+double currentRPM = 0;
+double motorPWM = 0;
 
+// PID
+// Tuning process, set I=1, D=0
+// Increase P until oscilation, half it
+// https://pidexplained.com/how-to-tune-a-pid-controller/
+double kP=1, kI=1.5, kD=0;
+
+PID motorPID(&currentRPM, &motorPWM, &targetRPM, kP, kI, kD, P_ON_M, DIRECT);
 
 
 // I2C Functions
@@ -31,50 +42,42 @@ void setup() {
   Serial.begin(9600);
   // Start the I2C Bus
   Wire.begin(10); // AddressL 0x10
-//  Wire.onRequest(onRequestOdometry);
+  //  Wire.onRequest(onRequestOdometry);
   Wire.onReceive(onReceiveMotorSpeed);
 
-  // Listen to encoder feedback, we don't care about direction so we only use a single pin
-  // 6 counts = 1 revolution on the BLDC motor
-  pinMode(ENC_A_PIN, INPUT);
+  // Pin and Encoder Setup
+  pinMode(ENC_A_PIN, INPUT_PULLUP); // We need to PullUp the hall encoder
+  pinMode(PWM_PIN, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(ENC_A_PIN), readEncoder, RISING);
 
-  // Setup the motor shield
-  delay(500);
-  shields = new TLE9879_Group(1);
-  shields->setMode(FOC, BOARD1);
-  shields->setMotorSpeed(0, BOARD1);
-  shields->setMotorMode(STOP_MOTOR, BOARD1);
+  // Setup the PID
+  motorPID.SetOutputLimits(PID_PWM_MIN, PID_PWM_MAX);
+  motorPID.SetMode(AUTOMATIC);
+
+  // TODO: Remove
+  targetRPM = 200;
   
-  shields->setMotorSpeed(3500, BOARD1);
-  shields->setMotorMode(START_MOTOR, BOARD1);
 }
 
 void loop() {
 
-  // Check the watchdog timer
-  // If last update was more than 1.5 seconds ago, stop the motor as we may have lost
-  // communication with the host
-  if(millis() - lastUpdateTime >= 1500){
-    //Serial.println("Communication timeout, forcing 0 speed");
-    //desiredPercSpeed = 0;
-    //doUpdate = true;
+  if(TUNING_MODE && Serial.available()){
+    targetRPM = (int) Serial.parseInt();
+    while(Serial.available()) Serial.read(); // Read any leftover chars
   }
 
-  // Do an update over SPI if required
-  if(doUpdate){
-    // Set the speed
-//    shields->setMotorSpeed(map(desiredPercSpeed, 0, 100, 0, MAX_MOTOR_RPM), BOARD1);
+  // If last update was more than 1.5 seconds ago, stop the motors as we may have lost communication with the host
+  if(!TUNING_MODE && millis() - lastUpdateTime >= 1500){
+    targetRPM = motorPWM = 0;
+    writePwm();
+  }
 
-    // Ensure the motor is stopped or started
-    if(desiredPercSpeed > 0){
-      shields->setMotorMode(START_MOTOR, BOARD1);
-    }else{
-      shields->setMotorMode(STOP_MOTOR, BOARD1);
-    }
-
-    // Update done
-    doUpdate = false;
+  // Disable the PID if we want 0 RPM
+  if(targetRPM == 0) {
+    motorPID.SetMode(MANUAL);
+    motorPWM = 0;
+  }else{
+    motorPID.SetMode(AUTOMATIC);
   }
 
   // Calculate the current motor velocity
@@ -87,16 +90,18 @@ void loop() {
 
   currentRPM = ((countI - prevMotorCount)/delta)/COUNTS_PER_REV*60.0;    // Convert count/s to RPM
 
-  Serial.println((String) (countI - prevMotorCount) + "," + (String) delta + "," + (String) currentRPM);
+  Serial.println((String) (countI - prevMotorCount) + "," + (String) currentRPM + "," + (String) targetRPM);
 
 
   // Save values for next cycle
   prevVelTime = currentTime;
   prevMotorCount = countI;
 
+  // Write PWM
+  writePwm();
 
   // Delay for some delta for velocity measurements
-  delay(100);
+  delay(200);
 }
 
 void onReceiveMotorSpeed(int byteCount){
@@ -111,14 +116,14 @@ void onReceiveMotorSpeed(int byteCount){
 
     // Write the new motor speeds
     uint8_t perc = (uint8_t) Wire.read();
-
-    if(perc != desiredPercSpeed){
-      desiredPercSpeed = perc;
-      doUpdate = true;
-    }
+    targetRPM = map(perc, 0, 100, 0, MAX_MOTOR_RPM);
 
     // Give time of last update for watchdog/failsafe behaviour
     lastUpdateTime = millis();
+}
+
+void writePwm(){
+    analogWrite(PWM_PIN, motorPWM);
 }
 
 void readEncoder(){
