@@ -78,6 +78,8 @@ void setup() {
   setMotorPWM(RIGHT, 0);
 
   // Start the I2C Bus
+  Wire.setSDA(16);  // RPI Pico
+  Wire.setSCL(17);
   Wire.begin(9); // AddressL 0x9, 0001001
   Wire.onRequest(onRequestOdometry);
   Wire.onReceive(onReceiveMotorSpeed);
@@ -235,12 +237,15 @@ void setMotorPWM(int pinStart, double pwm) {
   if (pwm == 0) {
     digitalWrite(pinStart + H1, HIGH);
     digitalWrite(pinStart + H2, HIGH);
+    analogWrite(pinStart + PWM, 255); // Enable Power Braking to stop rotation
   } else if (pwm > 0) {
     digitalWrite(pinStart + H1, LOW);
     digitalWrite(pinStart + H2, HIGH);
+    analogWrite(pinStart + PWM, abs(pwm));
   } else if (pwm < 0) {
     digitalWrite(pinStart + H1, HIGH);
     digitalWrite(pinStart + H2, LOW);
+    analogWrite(pinStart + PWM, abs(pwm));
   }
-  analogWrite(pinStart + PWM, abs(pwm));
+  
 }
