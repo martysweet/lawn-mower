@@ -15,4 +15,4 @@ fi
 
 # Setup pub key auth
 scp docker/docker-compose.yml $RPI_USER@$RPI_IP:~/
-ssh $RPI_USER@$RPI_IP "date && docker compose down && docker-compose pull && docker-compose up"
+ssh $RPI_USER@$RPI_IP "date && docker compose down --volumes && docker-compose pull && docker-compose up"

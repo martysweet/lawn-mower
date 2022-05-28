@@ -23,6 +23,15 @@ services:
     volumes:
       - /dev/shm:/dev/shm
 
+  drive_controller:
+    image: ghcr.io/martysweet/lawn-mower:dev
+    command: ros2 run drive_controller drive_controller
+    network_mode: host
+    pid: host
+    privileged: true
+    volumes:
+      - /dev/shm:/dev/shm
+
   joy_linux:
     image: ghcr.io/martysweet/lawn-mower:dev
     command: ros2 run joy_linux joy_linux_node
@@ -34,7 +43,7 @@ services:
 
   teleop_twist:
     image: ghcr.io/martysweet/lawn-mower:dev
-    command: ros2 run teleop_twist_joy teleop_node --ros-args -p require_enable_button:="false" -p axis_linear.x:="1" -p axis_angular.yaw:="0" -p scale_linear.x:="3.0" -p scale_angular.yaw:="3.0"
+    command: ros2 run teleop_twist_joy teleop_node --ros-args -p require_enable_button:="false" -p axis_linear.x:="1" -p axis_angular.yaw:="3" -p scale_linear.x:="3.0" -p scale_angular.yaw:="5.0"
     network_mode: host
     pid: host
     privileged: true

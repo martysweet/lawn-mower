@@ -2,6 +2,10 @@
 # https://github.com/ros-controls/ros2_controllers/blob/master/diff_drive_controller/src/diff_drive_controller.cpp
 # http://wiki.ros.org/navigation/Tutorials/RobotSetup/Odom
 # http://docs.ros.org/en/noetic/api/robot_localization/html/index.html
+
+# https://robofoundry.medium.com/ros2-control-differential-drive-robot-project-part-1-mechanical-build-2a323da04992
+# https://github.com/linorobot/linorobot2
+
 # Inputs:
 # - Topic: i2c_odometry
 # - drive_i2c publishes a count periodically, reset to 0 on each read
@@ -38,25 +42,6 @@ TOPIC_I2C_ODOMETRY = "i2c_odometry"
 def average(lst):
     return sum(lst) / len(lst)
 
-def translate(value, leftMin, leftMax, rightMin, rightMax):
-    # Figure out how 'wide' each range is
-    leftSpan = leftMax - leftMin
-    rightSpan = rightMax - rightMin
-
-    # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - leftMin) / float(leftSpan)
-
-    # Convert the 0-1 range into a value in the right range.
-    val = rightMin + (valueScaled * rightSpan)
-
-    if val < rightMin:
-        return rightMin
-    elif val > rightMax:
-        return rightMax
-    else:
-        return val
-
-
 class DriveController(Node):
     def __init__(self):
         super().__init__('drive_controller')
@@ -78,8 +63,9 @@ class DriveController(Node):
 
         self.odom_last_update = time.time()
         self.odom_right_count = 0
-        self.odom_right_vel_avg = 0
-        self.odom_right_vel_arr = [0, 0, 0, 0, 0]
+        self.odom_left_count = 0
+        self.odom_right_vel = 0
+        self.odom_left_vel = 0
 
         self.get_logger().info("Ready")
 
@@ -93,37 +79,54 @@ class DriveController(Node):
 
         # self.get_logger().info('{} {}'.format(velocity_left, velocity_right))
 
-        # Publish Drive speed (between 150-255 motor power)
-        # Max speed 0.3m/s (map it to 0.35
+        # Publish target RPM for the PID Controller
+        # Max speed 0.3m/s
         msg = I2CDrive()
-        msg.pwr_left = int(self.speed_to_pwr(velocity_left))
-        msg.pwr_right = int(self.speed_to_pwr(velocity_right))
+        msg.pwr_left = int(self.velocity_to_rpm(velocity_left))
+        msg.pwr_right = int(self.velocity_to_rpm(velocity_right))
         self.i2c_cmd.publish(msg)
 
-        # self.get_logger().info('{} {}'.format(msg.pwr_left, msg.pwr_right))
+        self.get_logger().info('{} {}'.format(msg.pwr_left, msg.pwr_right))
 
+    def velocity_to_rpm(self, velocity):
+        v = (60 / (2*3.1459 * WHEEL_RADIUS)) * velocity
+
+        if v > 255:
+          v = 255
+
+        if v < -255:
+          v = -255
+
+        return v
 
     def odom_calc_timer_cb(self):
-
-        dt = time.time() - self.odom_last_update
-        dr = self.odom_right_count
-        self.odom_right_count = 0
-        self.odom_last_update = time.time()
-
-        self.odom_right_vel_arr.pop(0)
-        self.odom_right_vel_arr.append((ODOMETRY_TRAVEL * dr) / (dt))
-        self.odom_right_vel_avg = average(self.odom_right_vel_arr)
-
-        self.get_logger().info('vel: {} m/s'.format(self.odom_right_vel_avg))
-
+        pass
+        # dt = time.time() - self.odom_last_update
+        # dr = self.odom_right_count
+        # dl = self.odom_left_count
+        # self.odom_right_count = self.odom_left_count = 0
+        # self.odom_last_update = time.time()
+        #
+        # # Calculate the current velocity of each wheel
+        # self.odom_right_vel = (ODOMETRY_TRAVEL * dr) / dt
+        # self.odom_left_vel = (ODOMETRY_TRAVEL * dl) / dt
+        #
+        # # Calculate the robot Angular Velocity
+        # ang_vel = (((odom->wheel_R_ang_pos - odom->wheel_L_ang_pos) * WHEEL_RADIUS / (ROBOT_WIDTH * DIAMETER_MODIFICATOR)) - odom->robot_angular_pos) / dtime;
+        #
+        #
+        #
+        #
+        # self.get_logger().info('vel: {} m/s'.format(self.odom_right_vel))
 
     def update_odometry(self, msg):
+        pass
         # self.get_logger().info('{}'.format(msg))
 
         # TODO: Do we need to discard if we don't have current drive?
         # TODO: This could happen if the hall is sitting on the edge - or should this be handled in the ardiuno code?
 
-        self.odom_right_count += msg.cnt_right
+        #self.odom_right_count += msg.cnt_right
 
         # self.right_travel += msg.cnt_right * ODOMETRY_TRAVEL # TODO * current wheel direction
 
@@ -134,14 +137,7 @@ class DriveController(Node):
         # TODO: Publish the pose, then visualise in Rviz
 
 
-    def speed_to_pwr(self, speed):
-        if speed > 0:
-            return translate(speed, 0, 0.35, 150, 255)  # TODO: Ideally we want this to push max speed when possible
 
-        if speed < 0:
-            return translate(speed, 0, -0.35, -150, -255)
-
-        return 0
 
 def main(args=None):
     rclpy.init(args=args)
